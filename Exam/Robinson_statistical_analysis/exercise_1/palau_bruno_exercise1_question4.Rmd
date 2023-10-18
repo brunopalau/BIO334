@@ -1,0 +1,48 @@
+---
+title: "Question 4"
+author: "Bruno Palau"
+date: "5/27/2022"
+output: html_document
+---
+
+```{r}
+library(Biostrings)
+library(ggplot2)
+library(stringr)
+
+```
+
+# import data
+```{r setup, include=FALSE}
+fs <- list.files("./files_for_ex1",".count$", full.names = TRUE) #use the directory where you saved your files!
+```
+
+# count number of proteins
+```{r}
+output <- lapply(fs,function(x){
+  text <- read.delim(x,sep="\t")
+  return (text)
+}
+)
+```
+
+# compute cpm and compute how many have cpm >1 for each file individually
+```{r}
+
+cpm <- lapply(output,function(x){
+  count <- x[,2]
+  cpm <- 1e6 * count/sum(count)
+  cond <- cpm >1
+  return (length(count[cond]))
+})
+
+```
+
+# final result
+```{r}
+cpm <- unlist(cpm)
+
+# combine everything
+final <- cbind(fs,cpm)
+final
+```

@@ -1,0 +1,58 @@
+---
+title: "Question 1"
+author: "Bruno Palau"
+date: "5/31/2022"
+output: html_document
+---
+
+```{r import libraries, message=FALSE,warning=FALSE}
+library(airway)
+library(dplyr)
+library(tibble)
+library(tidyr)
+data("airway")
+```
+
+
+```{r}
+# get metadata
+md <- airway %>%
+  colData(airway)%>% ## metadata
+  as.data.frame()
+  
+
+expr <- airway %>%
+  assay()%>%
+  as.data.frame()%>%
+  rownames_to_column("feature")
+ 
+   ## count matrix
+```
+
+# select the first 3 genes (rows)
+# convert to long format
+```{r}
+new_expr <- expr %>%
+  dplyr::slice(c(1,2,3),)%>%
+  gather(sample,counts,-feature)
+
+#rename
+new_expr <- new_expr %>% rename(gene=feature)
+
+```
+
+# join together
+```{r}
+df <- new_expr%>%
+  inner_join(select(md,dex,Run),by=c("sample"="Run"))
+
+df <- df %>% rename(condition=dex)
+```
+
+# count number of samples per gene
+```{r}
+df %>% group_by(gene)%>%
+  summarise(n())
+```
+
+

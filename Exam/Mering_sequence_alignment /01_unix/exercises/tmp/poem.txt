@@ -1,0 +1,7 @@
+Hallo this is my house.
+Welcome to my house.
+The other houses are nice as well!
+Lets go.
+added last line
+total number of lines
+       6

@@ -1,0 +1,51 @@
+---
+title: "Question 2"
+author: "Bruno Palau"
+date: "6/1/2022"
+output: html_document
+---
+
+```{r}
+library(ComplexHeatmap)
+library(cowplot)
+```
+
+```{r}
+load("data/airway_subset.RData")
+```
+
+
+# how many samples in count data
+```{r}
+length(unique(colnames(gene_counts)))
+```
+
+# create simple heatmap
+```{r}
+Heatmap(gene_counts)
+```
+```{r}
+colors2 <- colorRampPalette(c("red", 'orange', "green", 'darkgreen'))(10)
+group_anno <- sample_info$group
+names(group_anno) <- sample_info$sample
+ha <- HeatmapAnnotation(group = group_anno)
+
+Heatmap(gene_counts,
+        name = "counts",
+        column_names_gp = grid::gpar(fontsize = 8),
+        row_names_gp = grid::gpar(fontsize = 8),col=colors2,
+        top_annotation =  ha)
+
+```
+```{r}
+ha3 <- rowAnnotation(counts = anno_boxplot(gene_counts))
+Heatmap(gene_counts,
+        name = "counts",
+        column_names_gp = grid::gpar(fontsize = 8),
+        row_names_gp = grid::gpar(fontsize = 8),col=colors2,
+        top_annotation =  ha,
+        right_annotation = ha3,
+        rect_gp = gpar(col="black"),show_column_dend = FALSE)
+
+```
+

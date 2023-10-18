@@ -1,0 +1,57 @@
+---
+title: "Question 2"
+author: "Bruno Palau"
+date: "5/31/2022"
+output: html_document
+---
+
+```{r import libraries, message=FALSE,warning=FALSE}
+library(readr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+```
+
+# read in data
+```{r}
+data <- read_csv("./data/shrub-volume-data.csv")
+```
+
+
+```{r}
+volume_df <- data%>%
+  mutate(volume = length*width*height)%>%
+  dplyr::select(-c(length,height,width))
+```
+
+```{r}
+experiments_table <- tibble(experiment=1:3, manipulation=c("control","burn","rainout"))
+```
+
+# join manipulation with our volume df
+```{r}
+join_df <- volume_df%>%
+  left_join(experiments_table,by="experiment")
+```
+
+# filter out site 4
+```{r}
+filtered_df <- join_df%>%
+  filter(site!=4)
+```
+
+# recode rainout
+```{r}
+recoded_df <- filtered_df%>%
+  mutate(manipulation=recode(manipulation,"rainout" = "radioactive rainout"))
+```
+
+# show mean min and max
+```{r}
+recoded_df %>% group_by(manipulation)%>%
+  summarise(mean_volume = mean(volume),min_volume = min(volume),max_volume=max(volume))%>%
+  arrange(-mean_volume)
+```
+
+
+

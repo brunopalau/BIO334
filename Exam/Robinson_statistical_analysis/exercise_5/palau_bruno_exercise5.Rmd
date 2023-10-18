@@ -1,0 +1,176 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+# Load packages
+suppressPackageStartupMessages({
+  library(SingleCellExperiment)
+  library(scran)
+  library(scater)
+  library(CellBench)
+  library(celldex)
+  library(SingleR)
+  library(pheatmap)
+  library(ensembldb)
+  library(ComplexHeatmap)
+})
+```
+
+```{r}
+# Please check the console after running the first command. 
+# You need to allow R to create a cache directory by tying 'yes'.
+tenx <- load_sc_data()[["sc_10x"]]  
+cel_seq <- load_sc_data()[["sc_celseq"]]
+drop_seq <- load_sc_data()[["sc_dropseq"]]
+```
+
+```{r}
+# tenx
+dim(tenx)
+```
+
+```{r}
+colnames(colData(tenx))
+```
+
+```{r}
+#cel-seq
+dim(cel_seq)
+```
+
+```{r}
+colnames(colData(cel_seq))
+```
+
+```{r}
+#drop-seq
+dim(drop_seq)
+```
+
+
+```{r}
+colnames(colData(drop_seq))
+```
+
+```{r}
+# create list of `SingleCellExperiment` objects
+sce_list <- list(tenx, drop_seq, cel_seq) %>% 
+  set_names(c("tenx", "drop_seq", "celseq"))
+
+# find intersection of genes
+intersect_genes <- Reduce(intersect, lapply(sce_list, rownames))
+
+# find common columns
+overlap_cols <- Reduce(intersect, 
+                       lapply(sce_list, function(u) names(colData(u))))
+
+# subset each object to according to common genes/columns
+sce_list <- lapply(sce_list, function(sce){
+    sce_sub <- sce[intersect_genes,]
+    colData(sce_sub) <- colData(sce)[, overlap_cols]
+    sce_sub
+})
+
+# `cbind` the objects together
+sce_com <- do.call(SingleCellExperiment::cbind, sce_list)
+
+# assign vector w/ technology
+sce_com$technology <- rep(names(sce_list), 
+                          sapply(sce_list, ncol))
+
+# assign unique cellnames
+colnames(sce_com) <- rownames(colData(sce_com)) <- paste0(sce_com$technology, 
+                                                          "_", colnames(sce_com))
+
+# if you need to free some memory
+rm(sce_list, tenx, drop_seq, cel_seq)
+gc()
+
+```
+
+
+```{r}
+# how many cells and genes are left? 13575 cell with 1401 genes
+sce_com
+
+```
+
+
+```{r}
+# which assays are resent in our singleCellExperiment? counts, logcounts
+assays(sce_com)
+
+```
+```{r}
+# where can you access the technology information for each cell
+head(sce_com$technology)
+```
+
+# Analysis
+```{r}
+# get highly variable genes, so we can perform PCA (tSNE, UMAP)
+dec <- modelGeneVar(sce_com)
+top.hvgs <- getTopHVGs(dec,n=2000)
+is.hvgs <- rownames(sce_com) %in% top.hvgs + 1
+plot(dec$mean,dec$total,xlab="Mean log-expression", ylab="Variance", col = is.hvgs, pch = 20)
+
+```
+
+```{r}
+# run pca with the high variable genes
+sce_pca<- runPCA(sce_com, subset_row = top.hvgs)
+reducedDimNames(sce_pca)
+plotPCA(sce_pca)
+```
+
+```{r}
+# visualize with tSNE coloured by technology
+set.seed(1234)
+tsne_sce <- runTSNE(sce_com, 
+  components = 2, ntop = 500, 
+  exprs_values = "logcounts")
+
+plotTSNE(tsne_sce, colour_by = "technology") + 
+    ggtitle("Tsne - (no global structure)")
+```
+```{r}
+# do clustering to see if cell lines cluster differently
+g <- buildSNNGraph(sce_pca, use.dimred="PCA")
+cluster <- igraph::cluster_fast_greedy(g)$membership
+sce_pca$cluster <- factor(cluster)
+# see count of cells in cluster for each cell lines seperately
+table(sce_pca$cluster,sce_pca$cell_line)
+```
+```{r}
+# visualize
+Heatmap(table(sce_pca$cluster,sce_pca$cell_line)) # cell ines cluster in seperately clusters
+```
+```{r}
+# visualize with tSNE
+plotPCA(sce_pca, colour_by = "cell_line") + 
+    ggtitle("PCA")
+```
+
+```{r}
+# find top markers fore each cluster
+markers <- findMarkers(sce_pca,
+  groups = sce_pca$cluster,
+  pval.type = "all",
+  lfc = 1, 
+  direction = "up")
+```
+
+```{r}
+plot_list <- lapply(markers[1:4],function(x){
+  top.markers <- rownames(x)[[1]] # take top marker(s) from markers computed above, once for each cluster
+  # create violin plots for all clusters with its four best markers
+  plot <- plotExpression(sce_pca, features =top.markers, x = "cluster", colour_by = "cluster")
+  return (plot)
+})
+multiplot(plotlist = plot_list)
+```
+
+

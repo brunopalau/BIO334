@@ -1,0 +1,98 @@
+---
+title: "Question 1"
+author: "Bruno Palau"
+date: "6/1/2022"
+output: html_document
+---
+
+# load in packages
+```{r}
+library(ExperimentHub)
+```
+
+# load data
+```{r}
+eh <- ExperimentHub()
+data <- query(eh,"Bodenmiller")
+flow_set <- eh[["EH2255"]]
+```
+
+# consturct SCE
+```{r}
+# download panel & metadata 
+url <- "http://imlspenticton.uzh.ch/robinson_lab/cytofWorkflow"
+fns <- list(panel = "PBMC8_panel_v3.xlsx" , md = "PBMC8_metadata.xlsx")
+for (fn in fns) download.file(file.path(url, fn), destfile = fn, mode = "wb") 
+
+# load into R
+library(readxl)
+panel <- read_excel(fns$panel)
+md <- read_excel(fns$md)
+# sample_id, condition_ patient_id
+```
+
+```{r}
+library(CATALYST)
+```
+#create sce
+```{r}
+sce <- prepData(flow_set,panel,md)
+sce # 24 cellx with 172791 cells
+# BCRXL1 BCRXL2 BCRXL3 BCRXL4 BCRXL5 BCRXL6 BCRXL7 BCRXL8   Ref1   Ref2   Ref3   Ref4   Ref5   Ref6   Ref7   Ref8 
+#  2838  16675  12252   8990   8543   8622  14770  11653   2739  16725   9434   6906  11962  11038  15974  13670 
+```
+
+#Question 3
+```{r}
+# perform flow_SOM
+sce <- cluster(sce,xdim = 8,ydim = 8,maxK = 10,verbose = F) #8x8 SOM
+# table of the number of cells from each sample (sce$sample_id) assigned to each of the 5 metaclusters (meta5)
+table(cluster_ids(sce,"meta5"),sce$sample_id)
+
+```
+
+```{r}
+plotAbundances(sce,by = "sample_id",k="meta8")
+```
+```{r}
+# easier to analyse
+plotAbundances(sce,by = "cluster_id",k="meta8")
+# cluster 2 seems to be represented equally in the ref and BCRXL
+# cluster 1 overrepresented in BCRXL
+# cluster 3 overrepresented in ref
+```
+# question 4
+```{r}
+state_markers(sce)
+type_markers(sce)
+```
+```{r}
+#plot a series of heatmaps for the median type marker expression across the 8 metaclusters.
+plotMultiHeatmap(sce,hm1=FALSE,hm2 = type_markers(sce),fun="median",k="meta8")
+# may violate assumption that type markers are consistent across groups: CD4, CD20, CD123, CD7, HLA-DR
+```
+
+```{r}
+# dimensionality reduction
+sce <- runDR(sce, dr = "UMAP")
+```
+
+```{r}
+# lot umap and color by patient id
+plotDR(sce, color_by = "patient_id")
+# there doesnt sem to be a patient effect as there is no pattern of color across the 2dimensions
+```
+
+```{r}
+# there may be an effect of BCRXL but not clear
+plotDR(sce, color_by = "condition")
+```
+
+# have a look at pS6
+```{r}
+plotMultiHeatmap(sce,hm1=FALSE,hm2 = "pS6",fun="median",k="meta8")
+
+# there is an obious pattern, pS6 is more abundant in BCRXL group, and seems to be overrepresented in clusters 3,4,6,7. But especially highly abundant in sample BCRXL3 and 4
+```
+
+

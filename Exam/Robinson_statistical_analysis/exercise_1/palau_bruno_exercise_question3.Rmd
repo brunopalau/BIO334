@@ -1,0 +1,23 @@
+---
+title: "Question 3"
+author: "Bruno Palau"
+date: "5/27/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(Biostrings)
+library(ggplot2)
+library(stringr)
+
+```
+
+# correct corrupted dna string
+```{r }
+dna <- "aACTa TtCcC acCtc\tcaTCC CGGCc\nTaTaT CTGaa"
+
+upper_dna <- str_to_upper(dna)
+upper_dna <- str_replace_all(upper_dna," ","\n")
+new_dna <- str_replace_all(upper_dna,"\t","\n")
+cat(new_dna)
+```

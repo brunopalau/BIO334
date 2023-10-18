@@ -1,0 +1,64 @@
+---
+title: "Question 3"
+author: "Bruno Palau"
+date: "5/31/2022"
+output: html_document
+---
+
+```{r import libraries, message=FALSE,warning=FALSE}
+library(readr)
+library(dplyr)
+library(tibble)
+library(tidyr)
+library(stringr)
+```
+
+# import data
+```{r}
+fs <- list.files("./data/files_for_ex1/", full.names = TRUE) #use the directory where you saved your files!
+```
+
+```{r}
+data_frames <- lapply(fs,function(x){
+  text <- read.delim(x,sep="\t",header = FALSE)
+  name <- tail(str_split(x,"//")[[1]],n=1)
+  name <- str_split(name,"\\.",simplify = T)[[1]]
+  text <- text%>%
+    mutate(sample = name)
+  colnames(text) <- c("gene","count","sample")
+
+  return (text)
+}
+)
+```
+
+# join all dataframes
+```{r}
+one_df <- bind_rows(data_frames)
+head(one_df)
+```
+
+
+# compute cpm and compute how many have cpm >1 for each file individually
+```{r}
+one_df <- one_df%>%
+  group_by(sample)%>%
+  mutate(cpm = 1e6 * count/sum(count))
+head(one_df)
+```
+
+```{r}
+count_data <- one_df %>%
+  filter(cpm > 1)%>%
+  summarise(n())
+head(count_data)
+```
+
+# convert into wide form
+```{r}
+wide <- one_df %>%
+  select(gene,sample,count)%>%
+  spread(sample,count)
+head(wide)
+```
+

@@ -1,0 +1,58 @@
+---
+title: "Question 1"
+author: "Bruno Palau"
+date: "6/1/2022"
+output: html_document
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(RColorBrewer)
+library(ComplexHeatmap)
+library(ggplot2)
+library(cowplot)
+```
+# import data
+```{r}
+gapminder <- read_csv(file = "data/gapminder-FiveYearData.csv")
+```
+
+```{r}
+a <-ggplot(gapminder,aes(x=year,y=lifeExp,color=continent))+
+  geom_point()
+a
+```
+```{r}
+ggplot(gapminder,aes(x=year,y=lifeExp,color=continent))+
+  geom_point()+
+  facet_wrap(~continent,nrow=1)
+```
+```{r}
+b <-ggplot(gapminder,aes(x=year,y=lifeExp,color=continent))+
+  geom_point(alpha=0.3)+
+  geom_smooth()+
+  facet_wrap(~continent,nrow=1)
+b
+```
+```{r}
+ggplot(data=gapminder,aes(x=year,y=lifeExp,color=continent))+
+  geom_point(alpha=0.3)+
+  geom_smooth()+
+  facet_wrap(~continent,nrow=1)+
+  geom_point(data=gapminder%>%
+               filter(country=="Switzerland"),
+             aes(x=year,y=lifeExp,color=country))
+```
+```{r}
+ggplot(gapminder %>%
+         filter(country %in% c("Australia","New Zealand")),aes(x=gdpPercap,y=lifeExp,color=country))+
+  geom_text(aes(label=year))+
+  geom_label(aes(label=year))+
+  facet_wrap(~country)
+```
+
+```{r}
+plot_grid(a,b,labels=c("BAD","GOOD"),scale=c(0.8,1))
+```
+

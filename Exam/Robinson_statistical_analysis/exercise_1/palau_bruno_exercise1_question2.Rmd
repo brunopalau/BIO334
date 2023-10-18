@@ -1,0 +1,57 @@
+---
+title: "Question 2"
+author: "Bruno Palau"
+date: "5/27/2022"
+output: html_document
+---
+
+```{r}
+library(Biostrings)
+library(ggplot2)
+library(stringr)
+
+```
+
+# import data
+```{r setup, include=FALSE}
+f <- "https://stringdb-static.org/download/protein.sequences.v11.0/9606.protein.sequences.v11.0.fa.gz"
+
+data <- readAAStringSet(f)
+
+```
+```{r}
+df <- as.data.frame(data)
+```
+
+# count number of proteins
+```{r}
+
+length(data)
+
+```
+
+# generate histogram
+```{r}
+
+hist(log(width(data)))
+
+```
+
+# construct dataframe
+```{r}
+
+names <- str_split(names(data),"\\.", simplify = T)
+p_count <- vcountPattern(pattern="P",data)
+
+df <- data.frame(prot_id = names[,2],
+                 length = width(data),
+                 nr_p = p_count)
+
+
+
+```
+
+# write table into tab-delimted file
+```{r}
+write.table(df, file = "human_protein_length.txt")
+```
